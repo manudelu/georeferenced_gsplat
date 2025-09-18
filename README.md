@@ -1,6 +1,13 @@
-# Pipeline for Gaussian Splatting with Georeferentiation and correct scaling
+# Gaussian Splatting Pipeline with Georeferencing and Correct Scaling
 
-<iframe title="GaussinSplatting" width="1024" height="576" src="https://ion.cesium.com/stories/viewer/?id=7ed9f26b-3717-4095-ac09-8cd9c294e50e" frameborder="0" allow="fullscreen" allowfullscreen="true" mozallowfullscreen="true" webkitallowfullscreen="true"></iframe>
+This repository provides a pipeline for Gaussian Splatting with georeferencing and accurate scaling. Using this workflow, the resulting models are nearly perfectly scaled and aligned with real-world GPS coordinates. The reference frame is anchored to the GPS position of the first image in the dataset.
+
+The following images illustrate the results: on the left is the Gaussian Splatting reconstruction, and on the right is the refined point cloud, both uploaded to Cesium Ion.
+
+<img width="3835" height="945" alt="Comparison1" src="https://github.com/user-attachments/assets/3f9ba663-9007-4837-8b53-171b39f2801a" />
+<img width="3840" height="946" alt="Comparison2" src="https://github.com/user-attachments/assets/d2ed34bc-c13c-46be-b516-57509542e46c" />
+<img width="3842" height="946" alt="Comparison3" src="https://github.com/user-attachments/assets/854e806a-3d11-42c1-82f1-232acaae9141" />
+
 
 ## Installation Guide - Ubuntu 22.04
 
