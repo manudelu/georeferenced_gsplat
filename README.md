@@ -1,5 +1,7 @@
 # Pipeline for Gaussian Splatting with Georeferentiation and correct scaling
 
+<iframe title="GaussinSplatting" width="1024" height="576" src="https://ion.cesium.com/stories/viewer/?id=7ed9f26b-3717-4095-ac09-8cd9c294e50e" frameborder="0" allow="fullscreen" allowfullscreen="true" mozallowfullscreen="true" webkitallowfullscreen="true"></iframe>
+
 ## Installation Guide - Ubuntu 22.04
 
 1. System Update and Essentials
