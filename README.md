@@ -1,6 +1,6 @@
 # Gaussian Splatting Pipeline with Georeferencing and Correct Scaling
 
-This repository provides a pipeline for Gaussian Splatting with georeferencing and accurate scaling. Using this workflow, the resulting models are nearly perfectly scaled and aligned with real-world GPS coordinates. The reference frame is anchored to the GPS position of the first image in the dataset.
+This repository provides a pipeline for Gaussian Splatting with georeferencing and accurate scaling. Starting from drone images that contain GPS EXIF data, this workflow produces 3D reconstructions that are nearly perfectly scaled and aligned with real-world coordinates. The reference frame is anchored to the GPS position of the first image in the dataset.
 
 The following images illustrate the results: on the left is the Gaussian Splatting reconstruction, and on the right is the refined point cloud, both uploaded to Cesium Ion.
 
