@@ -1,4 +1,4 @@
-### Pipeline for Gaussian Splatting with Georeferentiation and correct scaling
+# Pipeline for Gaussian Splatting with Georeferentiation and correct scaling
 
 ## Installation Guide - Ubuntu 22.04
 
