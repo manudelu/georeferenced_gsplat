@@ -1,4 +1,3 @@
-
 import os
 import exifread
 
@@ -36,4 +35,3 @@ with open(OUTPUT_FILE, "w") as f_out:
                 print(f"No GPS EXIF data found in {filename}")
 
 print(f"Wrote geotags for COLMAP to {OUTPUT_FILE}")
-
