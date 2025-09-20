@@ -1,4 +1,4 @@
-FROM ubuntu-ldap:22-cuda
+FROM nvidia/cuda:12.5.0-devel-ubuntu22.04
 RUN apt update
 RUN apt install git build-essential cmake curl unzip wget xvfb -y
 WORKDIR /tmp
@@ -35,8 +35,8 @@ RUN conda install -n sugar -c conda-forge jupyterlab -y
 RUN conda install -n sugar -c conda-forge nodejs -y
 RUN conda install -n sugar -c conda-forge ipywidgets -y
 RUN conda install -n sugar -c conda-forge ninja -y
-RUN pip install open3d
-RUN pip install --upgrade PyMCubes
+RUN conda install -n sugar -c open3d open3d -y
+RUN conda install -n sugar -c conda-forge pymcubes -y
 
 RUN conda run -n sugar pip install -e gaussian_splatting/submodules/diff-gaussian-rasterization/
 RUN cd gaussian_splatting/submodules/simple-knn/ && sed -i '1i #include <float.h>' simple_knn.cu && conda run -n sugar pip install -e .
