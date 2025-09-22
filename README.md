@@ -64,10 +64,15 @@ The pipeline.sh automates the process of converting GPS-tagged drone images into
     ```
 
 3. **Run the Pipeline**
-  - Execute the main shell script:
+  - Make the script executable and launch it:
     ```bash
     chmod +x pipeline.sh
     ./pipeline.sh
+    ```
+  - If Running on a remote server (e.g., via SSH):
+    ```bash
+    nohup ./pipeline.sh > pipeline.log 2>&1 &
+    tail -f pipeline.log  # To monitor progress
     ```
   - The script automatically:
     - Copies images.
