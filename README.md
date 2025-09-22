@@ -66,7 +66,7 @@ The pipeline.sh automates the process of converting GPS-tagged drone images into
 3. **Run the Pipeline**
   - Execute the main shell script:
     ```bash
-    ./pipeline_with_logs.sh
+    ./pipeline.sh
     ```
   - The script automatically:
     - Copies images.
