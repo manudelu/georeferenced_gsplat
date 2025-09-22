@@ -2,96 +2,74 @@
 
 This repository provides a pipeline for Gaussian Splatting with georeferencing and accurate scaling. Starting from drone images that contain GPS EXIF data, this workflow produces 3D reconstructions that are nearly perfectly scaled and aligned with real-world coordinates. The reference frame is anchored to the GPS position of the first image in the dataset.
 
-The following images illustrate the results: on the left is the Gaussian Splatting reconstruction, and on the right is the refined point cloud, both uploaded to Cesium Ion.
+The following images illustrate the results: on the left is the Gaussian Splatting reconstruction, and on the right is the SuGaR-refined Gaussian representation, both uploaded to Cesium Ion.
 
 <img width="3835" height="945" alt="Comparison1" src="https://github.com/user-attachments/assets/3f9ba663-9007-4837-8b53-171b39f2801a" />
 <img width="3840" height="946" alt="Comparison2" src="https://github.com/user-attachments/assets/d2ed34bc-c13c-46be-b516-57509542e46c" />
 <img width="3842" height="946" alt="Comparison3" src="https://github.com/user-attachments/assets/854e806a-3d11-42c1-82f1-232acaae9141" />
 
+## Technologies Used
 
-## Installation Guide - Ubuntu 22.04
+- **CUDA 12.5** – Provides GPU acceleration to train the Gaussian Splatting model efficiently.
+- **COLMAP** – Performs Structure-from-Motion (SfM) and Multi-View Stereo (MVS) reconstruction to generate georeferenced sparse and dense 3D point clouds from drone images. These point clouds are georeferenced and scaled according to GPS data.
+- [**Gaussian Splatting**](https://github.com/graphdeco-inria/gaussian-splatting) – A neural rendering method that converts 3D points into Gaussian representations, producing highly detailed and accurate 3D reconstructions.
+- [**SuGaR**](https://github.com/Anttwo/SuGaR) – A framework built around Gaussian Splatting that orchestrates the full pipeline:
+  - *Short vanilla 3DGS optimization* – Optimizes a vanilla 3D Gaussian Splatting model for 7k iterations to position Gaussians in the scene.
+  - *SuGaR optimization* – Refines Gaussian positions and aligns them to the surface of the scene.
+  - *Mesh extraction* – Extracts a mesh from the optimized Gaussians.
+  - *SuGaR refinement* – Builds a hybrid representation combining Gaussians and mesh for maximum accuracy.
+  - *Textured mesh extraction (optional)* – Produces a traditional textured mesh for visualization, composition, and animation in Blender.
 
-1. System Update and Essentials
+## Pipeline Overview
 
-```bash
-sudo apt update && sudo apt upgrade -y
-sudo apt install git build-essential cmake curl unzip wget -y
-```
+The pipeline.sh automates the process of converting GPS-tagged drone images into a georeferenced, scaled 3D reconstruction using Gaussian Splatting. The workflow is divided into four main stages:
 
-2. Install Miniconda
+1. **Data Preparation**
+  - Copy raw drone images into the pipeline input folder.
+  - Extract GPS EXIF data from the images into a text file (geotags.txt) using exif_to_txt.py.
 
-```bash
-wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
-bash Miniconda3-latest-Linux-x86_64.sh
-```
+2. **COLMAP Reconstruction**
+  - Run COLMAP to perform Structure-from-Motion (SfM) and Multi-View Stereo (MVS) reconstruction.
+  - Convert the reconstruction to an ENU (East-North-Up) frame using the GPS of the first image as reference.
+  - The sparse and dense point clouds produced by COLMAP are aligned with real-world coordinates and scaled appropriately.
 
-3. Install CUDA 11.8 Toolkit
+3. **Gaussian Splatting Training**
+  - Train the Gaussian Splatting model using the georeferenced point cloud.
+  - Use GPU acceleration for fast processing.
+  - The training outputs:
+    - Refined 3D Gaussians (.ply)
+    - UV-textured mesh (.obj)
 
-```bash
-wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/cuda-ubuntu2004.pin
-sudo mv cuda-ubuntu2004.pin /etc/apt/preferences.d/cuda-repository-pin-600
+4. **Output Export**
+  - Copy the final 3D reconstruction and mesh into the designated output directory.
+  - The output is ready for visualization in tools like Cesium Ion, CloudCompare, Unreal Engine or any 3D GIS/game engines.
 
-wget https://developer.download.nvidia.com/compute/cuda/11.8.0/local_installers/cuda-repo-ubuntu2004-11-8-local_11.8.0-520.61.05-1_amd64.deb
-sudo dpkg -i cuda-repo-ubuntu2004-11-8-local_11.8.0-520.61.05-1_amd64.deb
-sudo cp /var/cuda-repo-ubuntu2004-11-8-local/cuda-368EAC11-keyring.gpg /usr/share/keyrings/
+## How to Run the Pipeline
 
-echo "deb [signed-by=/usr/share/keyrings/cuda-368EAC11-keyring.gpg] file:///var/cuda-repo-ubuntu2004-11-8-local /" | sudo tee /etc/apt/sources.list.d/cuda-local.list
+1. **Prepare Environment**
+  - Ensure you have GPU support with CUDA 12.5 or compatible version.
+  - Install Docker (optional) for reproducibility.
+  - Activate the sugar conda environment:
+    ```bash
+    conda activate sugar
+    ```
 
-sudo apt update
-sudo apt install -y cuda-toolkit-11-8
-```
+2. Organize Data
+  - Place drone images in /home/images
+  - Ensure images contain GPS EXIF metadata.
+  - clone the repository in /home/
+    ```bash
+    git clone https://github.com/manudelu/georeferenced_gsplat.git
+    cd georeferenced_gsplat
+    ```
 
-Update environment variables:
-
-```bash
-export PATH=/usr/local/cuda-11.8/bin:$PATH
-export LD_LIBRARY_PATH=/usr/local/cuda-11.8/lib64:$LD_LIBRARY_PATH
-source ~/.bashrc
-```
-
-Check:
-
-```bash
-nvcc --version
-```
-
-4. Install PyTorch 2.0.1 with CUDA 11.8
-
-```bash
-sudo apt install -y python3 python3-pip
-pip install torch==2.0.1 torchvision==0.15.2 torchaudio==2.0.2 --index-url https://download.pytorch.org/whl/cu118
-```
-
-5. Cleanup Installers
-
-```bash
-rm -rf cuda-repo-ubuntu2004-11-8-local_11.8.0-520.61.05-1_amd64.deb cuda-repo-wsl-ubuntu-12-6-local_12.6.0-1_amd64.deb Miniconda3-latest-Linux-x86_64.sh
-```
-
-6. Install COLMAP
-
-```bash
-sudo apt install -y colmap
-```
-
-7. Install SuGaR
-
-```bash
-git clone https://github.com/Anttwo/SuGaR.git --recursive
-cd SuGaR/
-python3 install.py
-```
-
-Activate the Conda environment: 
-
-```bash
-conda activate sugar
-```
-
-Install additional Python dependency:
-
-```bash
-pip install exifread
-```
-
-## Pipeline
+3. Run the Pipeline
+  - Execute the main shell script:
+    ```bash
+    ./pipeline_with_logs.sh
+    ```
+  - The script automatically:
+    - Copies images.
+    - Runs COLMAP reconstruction and alignment.
+    - Runs SuGaR training.
+    - Exports the final outputs to /home/georeferenced_gsplat/output
