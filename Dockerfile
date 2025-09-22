@@ -1,49 +1,49 @@
 FROM nvidia/cuda:12.5.0-devel-ubuntu22.04
-RUN apt update
-RUN apt install git build-essential cmake curl unzip wget xvfb -y
+
+# --- System dependencies ---
+RUN apt-get update && apt-get install -y \
+    git build-essential cmake curl unzip wget xvfb colmap \
+    && rm -rf /var/lib/apt/lists/*
+
+# --- Install Miniconda ---
 WORKDIR /tmp
-RUN wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
-RUN bash Miniconda3-latest-Linux-x86_64.sh -b -c
-RUN rm Miniconda3-latest-Linux-x86_64.sh
- 
-ENV PATH /usr/local/cuda/bin:$PATH
-ENV LD_LIBRARY_PATH /usr/local/cuda/lib64:$LD_LIBRARY_PATH
-ENV TORCH_CUDA_ARCH_LIST="8.9"
- 
-RUN apt install -y python3 python3-pip
+RUN wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh && \
+    bash Miniconda3-latest-Linux-x86_64.sh -b -p /root/miniconda3 && \
+    rm Miniconda3-latest-Linux-x86_64.sh
+ENV PATH="/root/miniconda3/bin:$PATH"
 
-RUN apt install colmap -y
+# --- Environment variables ---
+ENV PATH=/usr/local/cuda/bin:$PATH \
+    LD_LIBRARY_PATH=/usr/local/cuda/lib64:$LD_LIBRARY_PATH \
+    TORCH_CUDA_ARCH_LIST="8.9"
 
+# --- Clone SuGaR ---
 WORKDIR /home
 RUN git clone https://github.com/Anttwo/SuGaR.git --recursive
-WORKDIR /home/SuGaR/
+WORKDIR /home/SuGaR
 
-ENV PATH /root/miniconda3/condabin:$PATH
+# --- Create conda env and install deps ---
+RUN conda create -n sugar -y python=3.9 && \
+    conda install -n sugar -y \
+      -c pytorch -c nvidia -c pytorch3d \
+        pytorch pytorch-cuda torchvision torchaudio pytorch3d \
+      -c fvcore -c iopath -c conda-forge \
+        fvcore iopath plotly rich plyfile jupyterlab nodejs ipywidgets ninja open3d pymcubes \
+      -c open3d open3d
 
-RUN conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/main
-RUN conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/r
+# --- Switch shell to always run inside conda env ---
+SHELL ["conda", "run", "-n", "sugar", "/bin/bash", "-c"]
 
-RUN conda create --name sugar -y python=3.9
-RUN conda init bash
+# --- Install pip-based packages ---
+RUN pip install -e gaussian_splatting/submodules/diff-gaussian-rasterization/
+RUN cd gaussian_splatting/submodules/simple-knn && \
+    sed -i '1i #include <float.h>' simple_knn.cu && \
+    pip install -e .
+RUN git clone https://github.com/NVlabs/nvdiffrast && \
+    cd nvdiffrast && pip install .
+RUN pip install exifread
 
-RUN conda install -n sugar -c fvcore -c iopath -c conda-forge fvcore iopath -y
-RUN conda install -n sugar -c pytorch -c nvidia -c pytorch3d pytorch-cuda pytorch pytorch3d torchvision torchaudio  -y
-RUN conda install -n sugar -c plotly plotly -y
-RUN conda install -n sugar -c conda-forge rich -y
-RUN conda install -n sugar -c conda-forge plyfile -y
-RUN conda install -n sugar -c conda-forge jupyterlab -y
-RUN conda install -n sugar -c conda-forge nodejs -y
-RUN conda install -n sugar -c conda-forge ipywidgets -y
-RUN conda install -n sugar -c conda-forge ninja -y
-RUN conda install -n sugar -c open3d open3d -y
-RUN conda install -n sugar -c conda-forge pymcubes -y
-
-RUN conda run -n sugar pip install -e gaussian_splatting/submodules/diff-gaussian-rasterization/
-RUN cd gaussian_splatting/submodules/simple-knn/ && sed -i '1i #include <float.h>' simple_knn.cu && conda run -n sugar pip install -e .
+# --- Fix rasterizer for CUDA ---
+RUN sed -i 's/RasterizeGLContext()/RasterizeCudaContext()/g' /home/SuGaR/sugar_utils/mesh_rasterization.py
 
 WORKDIR /home/SuGaR
-RUN git clone https://github.com/NVlabs/nvdiffrast
-RUN cd nvdiffrast  && conda run -n sugar pip install .
-RUN conda run -n sugar pip install exifread
-
-RUN sed -i 's/RasterizeGLContext()/RasterizeCudaContext()/g' /home/SuGaR/sugar_utils/mesh_rasterization.py
