@@ -54,7 +54,7 @@ The pipeline.sh automates the process of converting GPS-tagged drone images into
     conda activate sugar
     ```
 
-2. Organize Data
+2. **Organize Data**
   - Place drone images in /home/images
   - Ensure images contain GPS EXIF metadata.
   - clone the repository in /home/
@@ -63,7 +63,7 @@ The pipeline.sh automates the process of converting GPS-tagged drone images into
     cd georeferenced_gsplat
     ```
 
-3. Run the Pipeline
+3. **Run the Pipeline**
   - Execute the main shell script:
     ```bash
     ./pipeline_with_logs.sh
