@@ -1,14 +1,15 @@
 #!/bin/bash
-set -euo pipefail  
+set -euo pipefail 
+ulimit -n 65535 
 
 # Paths
-BASE_DIR="/home/SuGaR"
+BASE_DIR="/home/SuGaR" 
 DATA_DIR="$BASE_DIR/gaussian_splatting/data"
 INPUT_DIR="$DATA_DIR/input"
-SCRIPT_DIR="/home/georeferenced_gsplat/scripts"
-IMAGES_DIR="/home/images"
+SCRIPT_DIR="/home/manueld/georeferenced_gsplat/scripts"
+IMAGES_DIR="/home/manueld/images"
 OUTPUT_DIR="$BASE_DIR/output"
-DEST_DIR="/home/georeferenced_gsplat/output"
+DEST_DIR="/home/manueld/georeferenced_gsplat/output"
 
 log() { echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*"; }
 
@@ -51,7 +52,7 @@ stdbuf -oL -eL xvfb-run -s "-screen 0 640x480x24" colmap model_aligner \
     --ref_images_path "$DATA_DIR/geotags.txt" \
     --ref_is_gps 1 \
     --alignment_type enu \
-    --robust_alignment_max_error 3.0
+    --alignment_max_error 3.0
 
 # Run SuGaR full pipeline
 log "Running SuGaR full training pipeline..."
