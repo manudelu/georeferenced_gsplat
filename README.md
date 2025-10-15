@@ -48,11 +48,7 @@ The pipeline.sh automates the process of converting GPS-tagged drone images into
 
 1. **Prepare Environment**
   - Ensure you have GPU support with CUDA 12.5 or compatible version.
-  - Install Docker (optional) for reproducibility.
-  - Activate the sugar conda environment:
-    ```bash
-    conda activate sugar
-    ```
+  - Install Docker for reproducibility.
 
 2. **Organize Data**
   - Place drone images in /home/images
