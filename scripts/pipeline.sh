@@ -2,6 +2,9 @@
 set -euo pipefail
 ulimit -n 65535
 
+eval "$(/opt/conda/bin/conda shell.bash hook)"
+conda activate sugar
+
 BASE_DIR="/home/SuGaR"
 DATA_DIR="$BASE_DIR/gaussian_splatting/data"
 INPUT_DIR="$DATA_DIR/input"
@@ -37,38 +40,26 @@ else
 fi
 
 # Run exif_to_txt.py 
-if [ -f "$DATA_DIR/geotags.txt" ]; then
-    log "Skipping exif_to_txt.py — geotags.txt already present"
-else
-    log "Running exif_to_txt.py..."
-    cd "$DATA_DIR"
-    cp "$SCRIPT_DIR/exif_to_txt.py" .
-    stdbuf -oL -eL python3 exif_to_txt.py
-fi
+log "Running exif_to_txt.py..."
+cd "$DATA_DIR"
+cp "$SCRIPT_DIR/exif_to_txt.py" .
+stdbuf -oL -eL python3 exif_to_txt.py
 
 # Run model_aligner
-if [ -f "$DATA_DIR/sparse/0/cameras.bin" ]; then
-    log "Skipping model_aligner — seems already aligned"
-else
-    log "Running COLMAP model_aligner..."
-    stdbuf -oL -eL xvfb-run -s "-screen 0 640x480x24" colmap model_aligner \
-        --input_path "$DATA_DIR/sparse/0" \
-        --output_path "$DATA_DIR/sparse/0" \
-        --ref_images_path "$DATA_DIR/geotags.txt" \
-        --ref_is_gps 1 \
-        --alignment_type enu \
-        --alignment_max_error 3.0
-fi
+log "Running COLMAP model_aligner..."
+stdbuf -oL -eL xvfb-run -s "-screen 0 640x480x24" colmap model_aligner \
+    --input_path "$DATA_DIR/sparse/0" \
+    --output_path "$DATA_DIR/sparse/0" \
+    --ref_images_path "$DATA_DIR/geotags.txt" \
+    --ref_is_gps 1 \
+    --alignment_type enu \
+    --alignment_max_error 3.0
 
-# Run Gaussian Splatting on CPU if output doesn't exist
-if [ -d "$GS_OUTPUT_DIR" ] && [ "$(ls -A "$GS_OUTPUT_DIR")" ]; then
-    log "Skipping Gaussian Splatting training — output already exists"
-else
-    log "Running Gaussian Splatting training..."
-    mkdir -p "$GS_OUTPUT_DIR"
-    cd /home/SuGaR/gaussian_splatting
-    python train.py -s data/ --data_device cpu --model_path "$GS_OUTPUT_DIR"
-fi
+# Run Gaussian Splatting on CPU
+log "Running Gaussian Splatting training..."
+mkdir -p "$GS_OUTPUT_DIR"
+cd /home/SuGaR/gaussian_splatting
+python train.py -s data/ --data_device cpu --model_path "$GS_OUTPUT_DIR"
 
 # Run SuGaR pipeline
 log "Running SuGaR training pipeline..."
@@ -82,13 +73,9 @@ stdbuf -oL -eL python3 train_full_pipeline.py \
     --gs_output_dir "$GS_OUTPUT_DIR" \
 
 # Copy results
-if [ -d "$DEST_DIR" ] && [ "$(ls -A "$DEST_DIR")" ]; then
-    log "Skipping export — destination not empty"
-else
-    log "Exporting output to $DEST_DIR..."
-    mkdir -p "$DEST_DIR"
-    cp -r "$OUTPUT_DIR"/* "$DEST_DIR/"
-fi
+log "Exporting output to $DEST_DIR..."
+mkdir -p "$DEST_DIR"
+cp -r "$OUTPUT_DIR"/* "$DEST_DIR/"
 
 END_TIME=$(date +%s)
 ELAPSED=$(( END_TIME - START_TIME ))
