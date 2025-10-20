@@ -8,10 +8,10 @@ conda activate sugar
 BASE_DIR="/home/SuGaR"
 DATA_DIR="$BASE_DIR/gaussian_splatting/data"
 INPUT_DIR="$DATA_DIR/input"
-SCRIPT_DIR="/home/manueld/georeferenced_gsplat/scripts"
-IMAGES_DIR="/home/manueld/fegino_images"
+SCRIPT_DIR="/home/georeferenced_gsplat/scripts"
+IMAGES_DIR="/home/images"
 OUTPUT_DIR="$BASE_DIR/output"
-DEST_DIR="/home/manueld/georeferenced_gsplat/output"
+DEST_DIR="/home/georeferenced_gsplat/output"
 GS_OUTPUT_DIR="$BASE_DIR/output/vanilla_gs"
 
 log() { echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*"; }
