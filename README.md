@@ -34,12 +34,16 @@ cd georeferenced_gsplat/
 docker build -t georeferenced_gsplat:latest .
 ```
 
+> **Important:** Before building, make sure to update the Dockerfile:
+> * Set ENV TORCH_CUDA_ARCH_LIST to match your GPU(s) compute capability
+> * Set -DCMAKE_CUDA_ARCHITECTURES in any CMake commands to your GPU(s) compute capability
+
 **3. Run the container interactively:**
 ```bash
-docker run --gpus all -it -v /path/to/your/images:/home/images georeferenced_gsplat:latest /bin/bash
+docker run --gpus all -it --name sugar-env -v /path/to/your/images:/home/images gaussian-splatting:22 bash
 ```
-
-> Replace /path/to/your/images with the folder containing your drone images.
+* Replace `/path/to/your/images` with the folder containing your drone images.
+* Inside the container, all your images will be accessible at `/home/images`.
 
 ## Pipeline Overview
 
