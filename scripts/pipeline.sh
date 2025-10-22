@@ -59,7 +59,7 @@ stdbuf -oL -eL xvfb-run -s "-screen 0 640x480x24" colmap model_aligner \
 log "Running Gaussian Splatting training..."
 mkdir -p "$GS_OUTPUT_DIR"
 cd /home/SuGaR/gaussian_splatting
-python train.py -s data/ --data_device cpu --model_path "$GS_OUTPUT_DIR"
+python train.py -s data/ --data_device cpu --iterations 7_000 --model_path "$GS_OUTPUT_DIR"
 
 # Run SuGaR pipeline (if you have multiple GPUs you can add the flag --gpu to choose which one to use -> e.g. --gpu 1)
 log "Running SuGaR training pipeline..."
