@@ -61,7 +61,7 @@ mkdir -p "$GS_OUTPUT_DIR"
 cd /home/SuGaR/gaussian_splatting
 python train.py -s data/ --data_device cpu --model_path "$GS_OUTPUT_DIR"
 
-# Run SuGaR pipeline
+# Run SuGaR pipeline (if you have multiple GPUs you can add the flag --gpu to choose which one to use -> e.g. --gpu 1)
 log "Running SuGaR training pipeline..."
 cd "$BASE_DIR"
 stdbuf -oL -eL python3 train_full_pipeline.py \
@@ -69,7 +69,6 @@ stdbuf -oL -eL python3 train_full_pipeline.py \
     -r dn_consistency \
     --high_poly True \
     --export_obj True \
-    --gpu 1 \
     --gs_output_dir "$GS_OUTPUT_DIR" \
 
 # Copy results
