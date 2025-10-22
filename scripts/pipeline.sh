@@ -69,7 +69,7 @@ stdbuf -oL -eL python3 train_full_pipeline.py \
     -r dn_consistency \
     --high_poly True \
     --export_obj True \
-    --gs_output_dir "$GS_OUTPUT_DIR" \
+    --gs_output_dir "$GS_OUTPUT_DIR" 
 
 # Copy results
 log "Exporting output to $DEST_DIR..."
