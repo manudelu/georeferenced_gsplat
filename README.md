@@ -23,13 +23,7 @@ The following images illustrate the results: on the left is the Gaussian Splatti
 
 For reproducibility and ease of use, the pipeline is provided in a Docker image.
 
-**1. Clone the repository:**
-```bash
-git clone https://github.com/manudelu/georeferenced_gsplat.git
-cd georeferenced_gsplat/
-```
-
-**2. Build the Docker image:**
+**1. Build the Docker image:**
 ```bash
 docker build -t georeferenced_gsplat:latest .
 ```
@@ -38,7 +32,7 @@ docker build -t georeferenced_gsplat:latest .
 > * Set ENV TORCH_CUDA_ARCH_LIST to match your GPU(s) compute capability
 > * Set -DCMAKE_CUDA_ARCHITECTURES in any CMake commands to your GPU(s) compute capability
 
-**3. Run the container interactively:**
+**2. Run the container interactively:**
 ```bash
 docker run --gpus all -it --name sugar-env -v /path/to/your/images:/home/images gaussian-splatting:22 bash
 ```
