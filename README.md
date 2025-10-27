@@ -10,7 +10,7 @@ The following images illustrate the results: on the left is the Gaussian Splatti
 
 ## Technologies Used
 
-- **COLMAP** – Performs Structure-from-Motion (SfM) and Multi-View Stereo (MVS) reconstruction to generate georeferenced sparse and dense 3D point clouds from drone images. These point clouds are georeferenced and scaled according to GPS data.
+- **COLMAP** – Performs Structure-from-Motion (SfM) reconstruction to generate georeferenced sparse and dense 3D point clouds from drone images. These point clouds are georeferenced and scaled according to GPS data.
 - [**Gaussian Splatting**](https://github.com/graphdeco-inria/gaussian-splatting) – A neural rendering method that converts 3D points into Gaussian representations, producing highly detailed and accurate 3D reconstructions.
 - [**SuGaR**](https://github.com/Anttwo/SuGaR) – A framework built around Gaussian Splatting that orchestrates the full pipeline:
   - *Short vanilla 3DGS optimization* – Optimizes a vanilla 3D Gaussian Splatting model for 7k iterations to position Gaussians in the scene.
@@ -48,7 +48,7 @@ The pipeline.sh automates the process of converting GPS-tagged drone images into
   - Extract GPS EXIF data from the images into a text file (geotags.txt) using exif_to_txt.py.
 
 2. **COLMAP Reconstruction**
-  - Run COLMAP to perform Structure-from-Motion (SfM) and Multi-View Stereo (MVS) reconstruction.
+  - Run COLMAP to perform Structure-from-Motion (SfM) reconstruction.
   - Convert the reconstruction to an ENU (East-North-Up) frame using the GPS of the first image as reference.
   - The sparse and dense point clouds produced by COLMAP are aligned with real-world coordinates and scaled appropriately.
 
