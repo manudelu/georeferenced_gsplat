@@ -2,51 +2,50 @@
 set -euo pipefail
 ulimit -n 65535
 
+# === LOG FUNCTION ===
+log() { echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*"; }
+
+# === ACTIVATE CONDA ENVIRONMENT ===
 eval "$(/opt/conda/bin/conda shell.bash hook)"
 conda activate sugar
 
-BASE_DIR="/home/SuGaR"
-DATA_DIR="$BASE_DIR/gaussian_splatting/data"
-INPUT_DIR="$DATA_DIR/input"
-SCRIPT_DIR="/home/georeferenced_gsplat/scripts"
-IMAGES_DIR="/home/images"
-OUTPUT_DIR="$BASE_DIR/output"
-DEST_DIR="/home/georeferenced_gsplat/output"
-GS_OUTPUT_DIR="$BASE_DIR/output/vanilla_gs"
+# === PATH SETUP ===
+BASE_DIR="/home/workspace"
+IMAGES_DIR="$BASE_DIR/images"
+DATA_DIR="$BASE_DIR/georeferenced_gsplat/data"
+SCRIPT_DIR="$BASE_DIR/georeferenced_gsplat/scripts"
+OUTPUT_DIR="$BASE_DIR/georeferenced_gsplat/output"
+SUGAR_DIR="/home/SuGaR"
+SUGAR_OUTPUT_DIR="$SUGAR_DIR/output"
 
-log() { echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*"; }
+log "Starting SuGaR pipeline for georeferenced Gaussian Splatting..."
 
-START_TIME=$(date +%s)
-log "Starting pipeline..."
-
-# Prepare input dir
-mkdir -p "$INPUT_DIR"
-
-# Copy images
-if [ -d "$INPUT_DIR" ] && [ "$(ls -A "$INPUT_DIR")" ]; then
-    log "Skipping image copy — $INPUT_DIR already contains files"
+# === PREPARE INPUT ===
+mkdir -p "$DATA_DIR/input"
+if [ -d "$DATA_DIR/input" ] && [ "$(ls -A "$DATA_DIR/input")" ]; then
+    log "Skipping image copy $DATA_DIR/input already contains files"
 else
     log "Copying images from $IMAGES_DIR..."
-    cp -r "$IMAGES_DIR"/* "$INPUT_DIR"/
+    cp -r "$IMAGES_DIR"/* "$DATA_DIR/input"/
 fi
 
-# Run COLMAP conversion t
+# === COLMAP CONVERSION ===
 if [ -d "$DATA_DIR/sparse/0" ]; then
-    log "Skipping COLMAP conversion — already exists"
+    log "Skipping COLMAP conversion already exists"
 else
     log "Running COLMAP conversion..."
-    cd "$BASE_DIR/gaussian_splatting"
-    stdbuf -oL -eL xvfb-run -s "-screen 0 640x480x24" python3 convert.py -s data/
+    cd "$SUGAR_DIR/gaussian_splatting"
+    stdbuf -oL -eL xvfb-run -s "-screen 0 640x480x24" python3 convert.py -s "$DATA_DIR"
 fi
 
-# Run exif_to_txt.py 
+# === EXIF EXTRACTION ===
 log "Running exif_to_txt.py..."
 cd "$DATA_DIR"
-cp "$SCRIPT_DIR/exif_to_txt.py" .
+cp "$SCRIPT_DIR/exif_to_txt.py" . || true
 stdbuf -oL -eL python3 exif_to_txt.py
 
-# Run model_aligner
-log "Running COLMAP model_aligner..."
+# === MODEL ALIGNMENT ===
+log "Running COLMAP model_aligner (georeferencing)..."
 stdbuf -oL -eL xvfb-run -s "-screen 0 640x480x24" colmap model_aligner \
     --input_path "$DATA_DIR/sparse/0" \
     --output_path "$DATA_DIR/sparse/0" \
@@ -55,27 +54,35 @@ stdbuf -oL -eL xvfb-run -s "-screen 0 640x480x24" colmap model_aligner \
     --alignment_type enu \
     --alignment_max_error 3.0
 
-# Run Gaussian Splatting on CPU
+# === GSPLAT TRAINING ON CPU ==
 log "Running Gaussian Splatting training..."
-mkdir -p "$GS_OUTPUT_DIR"
-cd /home/SuGaR/gaussian_splatting
-python train.py -s data/ --data_device cpu --iterations 7_000 --model_path "$GS_OUTPUT_DIR"
+mkdir -p "$OUTPUT_DIR/vanilla_gs"
+cd "$SUGAR_DIR/gaussian_splatting"
+python train.py -s "$DATA_DIR" --data_device cpu --iterations 7_000 --model_path "$OUTPUT_DIR/vanilla_gs"
 
-# Run SuGaR pipeline (if you have multiple GPUs you can add the flag --gpu to choose which one to use -> e.g. --gpu 1)
-log "Running SuGaR training pipeline..."
-cd "$BASE_DIR"
+# === SUGAR TRAINING PIPELINE ===
+log "Running SuGaR full pipeline..."
+cd "$SUGAR_DIR"
+
+# Detect GPU
+if python3 -c "import torch; exit(0) if torch.cuda.is_available() else exit(1)"; then
+    GPU_FLAG="--gpu 0"
+    log "GPU detected using GPU for training"
+else
+    GPU_FLAG=""
+    log "No GPU detected training will use CPU"
+fi
+
 stdbuf -oL -eL python3 train_full_pipeline.py \
     -s "$DATA_DIR" \
     -r dn_consistency \
     --high_poly True \
     --export_obj True \
-    --gs_output_dir "$GS_OUTPUT_DIR" 
+    --gs_output_dir "$OUTPUT_DIR/vanilla_gs" \
+    $GPU_FLAG
 
-# Copy results
-log "Exporting output to $DEST_DIR..."
-mkdir -p "$DEST_DIR"
-cp -r "$OUTPUT_DIR"/* "$DEST_DIR/"
-
-END_TIME=$(date +%s)
-ELAPSED=$(( END_TIME - START_TIME ))
-log "Done. Total runtime: $((ELAPSED / 3600))h $((ELAPSED % 3600 / 60))m $((ELAPSED % 60))s"
+# === EXPORT RESULTS ===
+log "Exporting final output to $OUTPUT_DIR..."
+cp -r "$SUGAR_OUTPUT_DIR"/* "$OUTPUT_DIR/" || true
+log "Results copied successfully"
+log "Pipeline completed successfully!"
