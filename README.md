@@ -10,7 +10,7 @@ The following images illustrate the results: on the left is the Gaussian Splatti
 
 ## Technologies Used
 
-- **COLMAP** – Performs Structure-from-Motion (SfM) reconstruction to generate georeferenced sparse 3D point clouds from drone images. These point clouds are georeferenced and scaled according to GPS data.
+- **[COLMAP](https://colmap.github.io/)** – Performs Structure-from-Motion (SfM) reconstruction to generate georeferenced sparse 3D point clouds from drone images. These point clouds are georeferenced and scaled according to GPS data.
 - [**Gaussian Splatting**](https://github.com/graphdeco-inria/gaussian-splatting) – A neural rendering method that converts 3D points into Gaussian representations, producing highly detailed and accurate 3D reconstructions.
 - [**SuGaR**](https://github.com/Anttwo/SuGaR) – A framework built around Gaussian Splatting that orchestrates the full pipeline:
   - *Short vanilla 3DGS optimization* – Optimizes a vanilla 3D Gaussian Splatting model for 7k iterations to position Gaussians in the scene.
@@ -23,7 +23,25 @@ The following images illustrate the results: on the left is the Gaussian Splatti
 
 For reproducibility and ease of use, the pipeline is provided in a Docker image.
 
-**1. Build the Docker image:**
+Before running the container, you need to organize your local workspace. This ensures your data and outputs persist even after you stop or rebuild the Docker image.
+
+**1. Create the Workspace Structure**
+
+On your host machine, create a main project folder. The structure should look like this:
+```bash
+/workspace/
+ ├── images/                 # Folder containing your raw drone images (with GPS EXIF data)
+ └── georeferenced_gsplat/   # Folder where the processing scripts and outputs will live
+```
+
+**2. Clone the repository**
+
+Inside the `/workspace` folder, clone the repository:
+```bash
+git clone https://github.com/manudelu/georeferenced_gsplat.git
+```
+
+**3. Build the Docker image**
 ```bash
 docker build -t georeferenced_gsplat:latest .
 ```
@@ -32,27 +50,25 @@ docker build -t georeferenced_gsplat:latest .
 > * Set ENV TORCH_CUDA_ARCH_LIST to match your GPU(s) compute capability
 > * Set -DCMAKE_CUDA_ARCHITECTURES in any CMake commands to your GPU(s) compute capability
 
-**2. Run the container interactively:**
+**4. Run the Docker Container**
 ```bash
-docker run --gpus all -it --name sugar-env -v /path/to/your/images:/home/images gaussian-splatting:22 bash
+docker run --gpus all -it --name sugar-env -v /workspace:/home/workspace gaussian-splatting:22 bash
 ```
-* Replace `/path/to/your/images` with the folder containing your drone images.
-* Inside the container, all your images will be accessible at `/home/images`.
 
 ## Pipeline Overview
 
-The pipeline.sh automates the process of converting GPS-tagged drone images into a georeferenced, scaled 3D reconstruction using Gaussian Splatting. The workflow is divided into four main stages:
+The `pipeline.sh` automates the process of converting GPS-tagged drone images into a georeferenced, scaled 3D reconstruction using Gaussian Splatting. The workflow is divided into four main stages:
 
 1. **Data Preparation**
   - Copy raw drone images into the pipeline input folder.
-  - Extract GPS EXIF data from the images into a text file (geotags.txt) using exif_to_txt.py.
+  - Extract GPS EXIF data from the images into a text file (`geotags.txt`) using `exif_to_txt.py`.
 
 2. **COLMAP Reconstruction**
   - Run COLMAP to perform Structure-from-Motion (SfM) reconstruction.
   - Convert the reconstruction to an ENU (East-North-Up) frame using the GPS of the first image as reference.
   - The sparse point cloud produced by COLMAP are aligned with real-world coordinates and scaled appropriately.
 
-3. **Gaussian Splatting Training**
+3. **Gaussian Splatting Training (SuGaR)**
   - Train the Gaussian Splatting model using the georeferenced point cloud.
   - Use GPU acceleration for fast processing.
   - The training outputs:
@@ -65,34 +81,25 @@ The pipeline.sh automates the process of converting GPS-tagged drone images into
 
 ## Running the Pipeline
 
-1. **Prepare Environment**
-  - Ensure you have GPU support with CUDA 12.5 or compatible version.
-  - Install Docker for reproducibility.
+Make the script executable and launch it:
+```bash
+cd /home/workspace/georeferenced_gsplat/scripts
+chmod +x pipeline.sh
+./pipeline.sh
+```
 
-2. **Organize Data**
-  - Ensure images are in `/home/images` and contain GPS EXIF metadata.
-  - clone the repository in `/home/`
-    ```bash
-    git clone https://github.com/manudelu/georeferenced_gsplat.git
-    cd georeferenced_gsplat/scripts
-    ```
+The script automatically:
+  - Copies images from `/home/workspace/images` to `/home/workspace/data/input`.
+  - Runs COLMAP reconstruction (SfM) - converts the dataset to COLMAP sparse model format and aligns the model geospatially using the geotags.
+  - Trains the Gaussian Splatting model, which will be saved in `/home/workspace/georeferenced_gsplat/output/vanilla_gs`.
+  - Runs the SuGaR training pipeline, generating refined 3D outputs such as UV-textured meshes (`.obj`) and Gaussian point clouds (`.ply`) inside the output directory.
+  - Exports the final results by copying all files from `/home/SuGaR/output` to `/home/workspace/georeferenced_gsplat/output`
 
-3. **Run the Pipeline**
-  - Make the script executable and launch it:
-    ```bash
-    chmod +x pipeline.sh
-    ./pipeline.sh
-    ```
-  - If Running on a remote server (e.g., via SSH):
-    ```bash
-    nohup ./pipeline.sh > pipeline.log 2>&1 &
-    tail -f pipeline.log  # To monitor progress
-    ```
-  - The script automatically:
-    - Copies images.
-    - Runs COLMAP reconstruction and alignment.
-    - Runs SuGaR training.
-    - Exports the final outputs to `/home/georeferenced_gsplat/output`
+> If running on a remote server (e.g., via SSH):
+>```bash
+>nohup ./pipeline.sh > pipeline.log 2>&1 &
+>tail -f pipeline.log  # To monitor progress
+>```
    
 ## Importing into Cesium Ion
 
@@ -116,3 +123,7 @@ The pipeline.sh automates the process of converting GPS-tagged drone images into
    * Adjust rotation if necessary.
   
 > Now your Gaussian Splatting reconstruction is correctly georeferenced in Unreal Engine.
+
+## Notes
+* The pipeline automatically detects available GPUs for SuGaR training. If you want to force CPU-only execution or specify a different GPU, you can edit the `pipeline.sh` file.
+* Mounting the `/workspace` directory ensures your data, scripts, and outputs persist across Docker rebuilds, keeping your experiments reproducible, organized, and clean.
