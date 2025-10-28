@@ -55,52 +55,48 @@ docker build -t georeferenced_gsplat:latest .
 docker run --gpus all -it --name sugar-env -v /workspace:/home/workspace gaussian-splatting:22 bash
 ```
 
-## Pipeline Overview
+## Pipeline Workflow
 
-The `pipeline.sh` automates the process of converting GPS-tagged drone images into a georeferenced, scaled 3D reconstruction using Gaussian Splatting. The workflow is divided into four main stages:
+### Launch the Pipeline
 
-1. **Data Preparation**
-  - Copy raw drone images into the pipeline input folder.
-  - Extract GPS EXIF data from the images into a text file (`geotags.txt`) using `exif_to_txt.py`.
-
-2. **COLMAP Reconstruction**
-  - Run COLMAP to perform Structure-from-Motion (SfM) reconstruction.
-  - Convert the reconstruction to an ENU (East-North-Up) frame using the GPS of the first image as reference.
-  - The sparse point cloud produced by COLMAP are aligned with real-world coordinates and scaled appropriately.
-
-3. **Gaussian Splatting Training (SuGaR)**
-  - Train the Gaussian Splatting model using the georeferenced point cloud.
-  - Use GPU acceleration for fast processing.
-  - The training outputs:
-    - Refined 3D Gaussians (`.ply`)
-    - UV-textured mesh (`.obj`)
-
-4. **Output Export**
-  - Copy the final 3D reconstruction and mesh into the designated output directory.
-  - The output is ready for visualization in tools like Cesium Ion, CloudCompare, Unreal Engine or any 3D GIS/game engines.
-
-## Running the Pipeline
-
-Make the script executable and launch it:
+Make the script executable and run it inside the container:
 ```bash
 cd /home/workspace/georeferenced_gsplat/scripts
 chmod +x pipeline.sh
 ./pipeline.sh
 ```
 
-The script automatically:
-  - Copies images from `/home/workspace/images` to `/home/workspace/data/input`.
-  - Runs COLMAP reconstruction (SfM) - converts the dataset to COLMAP sparse model format and aligns the model geospatially using the geotags.
-  - Trains the Gaussian Splatting model, which will be saved in `/home/workspace/georeferenced_gsplat/output/vanilla_gs`.
-  - Runs the SuGaR training pipeline, generating refined 3D outputs such as UV-textured meshes (`.obj`) and Gaussian point clouds (`.ply`) inside the output directory.
-  - Exports the final results by copying all files from `/home/SuGaR/output` to `/home/workspace/georeferenced_gsplat/output`
-
 > If running on a remote server (e.g., via SSH):
 >```bash
 >nohup ./pipeline.sh > pipeline.log 2>&1 &
 >tail -f pipeline.log  # To monitor progress
 >```
-   
+
+### Automated Processing Stages
+
+1. **Data Preparation**
+  - Copy raw drone images from `/home/workspace/images` into `/home/workspace/data/input`.
+  - Extract GPS EXIF data from images into a text file (`geotags.txt`) using `exif_to_txt.py`.
+
+2. **COLMAP Reconstruction**
+  - Run COLMAP to perform Structure-from-Motion (SfM) reconstruction.
+  - Convert the reconstruction to an ENU (East-North-Up) coordinate frame using the GPS position of the first image as the reference.
+  - Produces a georeferenced and scaled sparse point cloud aligned with real-world coordinates.
+
+3. **Gaussian Splatting Training**
+  - Trains the Gaussian Splatting model using the georeferenced point cloud.
+  - Saves the results in `/home/workspace/georeferenced_gsplat/output/vanilla_gs`
+
+4. **SuGaR Training and Refinement**
+  - Runs the SuGaR pipeline, refining the Gaussian scene to produce high-fidelity results.
+  - Generates:
+    - Refined Gaussian point clouds (`.ply`)
+    - UV-textured meshes (`.obj`)
+
+5. **Output Export**
+  - Copies all final outputs from  `/home/SuGaR/output` to `/home/workspace/georeferenced_gsplat/output`.
+  - The results are ready for visualization in Cesium Ion, CloudCompare, Unreal Engine, or other 3D/GIS software.
+
 ## Importing into Cesium Ion
 
 1. Login to [Cesium Ion](https://cesium.com/platform/cesium-ion/).
@@ -112,7 +108,7 @@ The script automatically:
      
 > Your Gaussian Splatting reconstruction will now be correctly aligned to real-world coordinates.
 
-## Importing into Ureaal Engine
+## Importing into Unreal Engine
 
 1. Open your Unreal Engine project (with [Cesium for Unreal](https://www.fab.com/listings/76c295fe-0dc6-4fd6-8319-e9833be427cd) and [LumaAI](https://www.fab.com/listings/b52460e0-3ace-465e-a378-495a5531e318) or [XScene](https://github.com/xverse-engine/XScene-UEPlugin) plugin installed).
 2. Import the refined `.ply` into Unreal Engine.
