@@ -17,7 +17,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # CUDA paths
 ENV PATH=/usr/local/cuda/bin:$PATH
 ENV LD_LIBRARY_PATH=/usr/local/cuda/lib64:$LD_LIBRARY_PATH
-ENV TORCH_CUDA_ARCH_LIST="8.9"
+ENV TORCH_CUDA_ARCH_LIST="8.6"
 
 # Install Miniconda
 WORKDIR /opt
@@ -66,9 +66,10 @@ RUN sed -i 's/--SiftMatching\.use_gpu/--FeatureMatching.use_gpu/g' /home/SuGaR/g
 
 # Install COLMAP from source
 WORKDIR /tmp
+RUN apt-get update && apt-get install -y libopenblas-dev
 RUN git clone https://github.com/colmap/colmap.git
 WORKDIR /tmp/colmap/build
-RUN cmake .. -GNinja -DBLA_VENDOR=Intel10_64lp -DCMAKE_CUDA_ARCHITECTURES=89
+RUN cmake .. -GNinja -DBLAS_LIBRARIES=/usr/lib/x86_64-linux-gnu/libopenblas.so -DLAPACK_LIBRARIES=/usr/lib/x86_64-linux-gnu/libopenblas.so -DCMAKE_CUDA_ARCHITECTURES=86
 RUN ninja && ninja install
 
 # Clean up conda and tmp
